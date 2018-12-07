@@ -1,6 +1,5 @@
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
@@ -10,22 +9,19 @@ public class Server {
 		byte[] recData = new byte[1024];
 		int i = 0;
 
-		FileWriter file = new FileWriter(
+		FileOutputStream file = new FileOutputStream(
 				"D:/Users/cdbm/Documents/testing-received.7z");
-		PrintWriter out = new PrintWriter(file);
+		
 
-		// BufferedOutputStream bos = new BufferedOutputStream(fos);
 
 		while (true) {
-			// PrintWriter out = new PrintWriter(file);
+			
 
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			serverSocket.receive(recPacket);
-			String line = new String(recPacket.getData());
-			System.out.println("\n Data: " + line);
-			out.println(line);
+			file.write(recPacket.getData());
 			System.out.println("\nPacket" + ++i + " written to file\n");
-			out.flush();
+			file.flush();
 		}
 	}
 }
