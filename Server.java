@@ -75,12 +75,27 @@ public class Server {
 	}
 }
 
+	public static void mountPacket(byte[] data, int sequenceNum){
+		String seqData;
+		if(sequenceNum < 10)
+			seqData = "0"+sequenceNum;
+		else
+			seqData = ""+sequenceNum;
+		byte[] seq = seqData.getBytes();
+		data = Arrays.copyOf(data,MAX_SIZE+2);
+		data[MAX_SIZE] = seq[0];
+		data[MAX_SIZE+1] = seq[1];
+		
+	}
+}
+
 class sendPacket extends Thread{
 	private DatagramPacket send;
-	private int sequenceNum; 
-	private byte[] recData = new byte[1024];
+	private String sequenceNum; 
+	private byte[] recData = new byte[2];
+	//private byte[] dale = Packet.mount(this.recData,7);
 
-	public sendPacket(DatagramPacket send, int sequenceNum)
+	public sendPacket(DatagramPacket send, String sequenceNum)
 	{
 		this.send = send;
 		this.sequenceNum = sequenceNum;
@@ -94,20 +109,20 @@ class sendPacket extends Thread{
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 
 			clientSocket.send(this.send);
-			int ack = -1;
+			String ack = "";
 			long sent = System.currentTimeMillis();
-			while(ack != this.sequenceNum)
+			while(!ack.equals(sequenceNum))
 			{
 				sent = System.currentTimeMillis();
 				if(sent-elapse > 3500)
 				{
-					System.out.println("timeout no pacote de sequenceNum: "+sequenceNum);
+					System.out.println("timeout no pacote de sequenceNum: "+ sequenceNum);
 					clientSocket.send(this.send);
 					elapse = System.currentTimeMillis();
 				}
 				serverSocket.receive(recPacket);
-				String ackmsg = new String (recData, "UTF-8");
-				ack = Integer.parseInt(ackmsg);
+				ack = new String (recData, "UTF-8");
+				//ack = Integer.parseInt(ackmsg);
 			}
 			
 		}catch(ConnectException e){
