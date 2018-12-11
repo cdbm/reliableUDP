@@ -1,10 +1,7 @@
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Arrays;
 
 public class Server {
@@ -20,7 +17,7 @@ public class Server {
 
 		byte[] sendData = new byte[MAX_SIZE];
 
-		String filePath = "C:/Users/C. Davi/Documents/Lista_2.txt";
+		String filePath = "C:/Users/bergc/Documents/google.jpg";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -49,12 +46,14 @@ public class Server {
 
 		FileInputStream fis1 = new FileInputStream(file);
 		// while((count = fis1.read(sendData)) != -1 && (noOfPackets!=0))
+		int sequenceNum = 0;
 		while ((count = fis1.read(sendData)) != -1) {
 			if (noOfPackets <= 0)
 				break;
 			System.out.println(new String(sendData));
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
 			clientSocket.send(sendPacket);
+			sequenceNum++;
 			System.out.println("========");
 			System.out.println("last pack sent" + sendPacket);
 			noOfPackets--;
@@ -73,5 +72,48 @@ public class Server {
 		clientSocket.send(sendPacket1);
 		System.out.println("last pack sent" + sendPacket1);
 
+	}
+}
+
+class sendPacket extends Thread{
+	private DatagramPacket send;
+	private int sequenceNum; 
+	private byte[] recData = new byte[1024];
+
+	public sendPacket(DatagramPacket send, int sequenceNum)
+	{
+		this.send = send;
+		this.sequenceNum = sequenceNum;
+	}
+	public void run(){
+		try{
+			long elapse = System.currentTimeMillis();
+			DatagramSocket clientSocket = new DatagramSocket();
+
+			DatagramSocket serverSocket = new DatagramSocket(9876);
+			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
+
+			clientSocket.send(this.send);
+			int ack = -1;
+			long sent = System.currentTimeMillis();
+			while(ack != this.sequenceNum)
+			{
+				sent = System.currentTimeMillis();
+				if(sent-elapse > 3500)
+				{
+					System.out.println("timeout no pacote de sequenceNum: "+sequenceNum);
+					clientSocket.send(this.send);
+					elapse = System.currentTimeMillis();
+				}
+				serverSocket.receive(recPacket);
+				String ackmsg = new String (recData, "UTF-8");
+				ack = Integer.parseInt(ackmsg);
+			}
+			
+		}catch(ConnectException e){
+			System.out.println("Deu ruim no destino");
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 }
