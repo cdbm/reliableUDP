@@ -18,7 +18,7 @@ public class Server {
 
 		byte[] sendData = new byte[MAX_SIZE];
 
-		String filePath = "C:/Users/bergc/Documents/Lista_2.txt";
+		String filePath = "C:/Users/C. Davi/Documents/Lista_2.txt";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -41,7 +41,7 @@ public class Server {
 		int lastPackLen = totLength - off;
 		System.out.println("\nLast packet Length : " + lastPackLen);
 
-		byte[] lastPack = new byte[lastPackLen ]; // create new array without redundant information
+		byte[] lastPack = new byte[lastPackLen]; // create new array without redundant information
 
 		fis.close();
 
@@ -67,10 +67,11 @@ public class Server {
 		System.out.println("\nlast packet\n");
 		System.out.println(new String(sendData));
 
-		lastPack = Arrays.copyOf(sendData, lastPackLen);
+		lastPack = Arrays.copyOf(sendData, lastPackLen-1);
 
 		System.out.println("\nActual last packet\n");
 		System.out.println(new String(lastPack));
+		lastPack = mountPacket(lastPack, ++sequenceNum);
 		// send the correct packet now. but this packet is not being send.
 		DatagramPacket sendPacket1 = new DatagramPacket(lastPack, lastPack.length, IpAddress, 9876);
 		clientSocket.send(sendPacket1);
