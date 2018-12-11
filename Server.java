@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 
+
 public class Server {
 	static int serverPort;
 	static String filename;
@@ -17,7 +18,7 @@ public class Server {
 
 		byte[] sendData = new byte[MAX_SIZE];
 
-		String filePath = "C:/Users/bergc/Documents/google.jpg";
+		String filePath = "C:/Users/bergc/Documents/Lista_2.txt";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -50,13 +51,16 @@ public class Server {
 		while ((count = fis1.read(sendData)) != -1) {
 			if (noOfPackets <= 0)
 				break;
-			System.out.println(new String(sendData));
+			//byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
+
+			sendData = mountPacket(sendData, ++sequenceNum);
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
 			clientSocket.send(sendPacket);
-			sequenceNum++;
+			System.out.println(sendPacket.hashCode());
+			
 			System.out.println("========");
-			System.out.println("last pack sent" + sendPacket);
-			noOfPackets--;
+			System.out.println("last pack sent     " + new String(sendPacket.getData()));
+			noOfPackets--; 
 		}
 
 		// check
@@ -73,18 +77,18 @@ public class Server {
 		System.out.println("last pack sent" + sendPacket1);
 
 	}
-}
 
-	public static void mountPacket(byte[] data, int sequenceNum){
+	public static byte[] mountPacket(byte[] sendData, int sequenceNum){
 		String seqData;
 		if(sequenceNum < 10)
 			seqData = "0"+sequenceNum;
 		else
 			seqData = ""+sequenceNum;
 		byte[] seq = seqData.getBytes();
-		data = Arrays.copyOf(data,MAX_SIZE+2);
-		data[MAX_SIZE] = seq[0];
-		data[MAX_SIZE+1] = seq[1];
+		sendData = Arrays.copyOf(sendData, 1050);
+		sendData[1048] = seq[0];
+		sendData[1048+1] = seq[1];
+		return sendData;
 		
 	}
 }
