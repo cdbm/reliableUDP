@@ -28,4 +28,14 @@ public class Client {
 
 		}
 	}
+	public static String getSeq(DatagramPacket recPacket){
+		byte[] seq = new byte[2];
+		seq[0] =  recPacket.getData()[1048];
+		seq[1] =  recPacket.getData()[1049];
+		String x = new String(seq);
+		
+
+		System.out.println(x);
+		return x;
+	}
 }
