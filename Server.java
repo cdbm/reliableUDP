@@ -13,7 +13,7 @@ public class Server {
 	static int sendBase = 0, lastSent;
 	static int MAX_SIZE = 1048;
 	static String sn;
-	static Timer timeout;
+	static Timer timeout = new Timer();
 
 	public static void main(String args[]) throws SocketException, IOException {
 		int count = 0, ackNum;
@@ -142,13 +142,17 @@ public class Server {
 		}
 
 		public void run() {
-			if (window[seq] == false) {
+			try {
+			if (window[seq%10] == false) {
 				System.out.println("**PACKET TIMEOUT (seq: " + seq + ")**");
 
 				try {
 					send(message, seq);
 				} catch (Exception e) {
 				}
+			}
+			}catch(NullPointerException e) {
+				e.printStackTrace();
 			}
 		}
 
