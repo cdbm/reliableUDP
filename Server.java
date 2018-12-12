@@ -23,7 +23,7 @@ public class Server {
 		byte[] sendData = new byte[MAX_SIZE];
 		String ack;
 
-		String filePath = "C:/Users/bergc/Documents/google.jpg";
+		String filePath = "C:/Users/diani/Downloads/Alyssa.jpg";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -130,15 +130,20 @@ public class Server {
 
 	public static byte[] mountPacket(byte[] sendData, int sequenceNum) {
 		String seqData;
+		byte checkSum = 0;
 		if (sequenceNum < 10)
 			seqData = "0" + sequenceNum;
 		else
 			seqData = "" + sequenceNum;
 		byte[] seq = seqData.getBytes();
 		sn = seqData;
-		sendData = Arrays.copyOf(sendData, MAX_SIZE + 2);
+		sendData = Arrays.copyOf(sendData, MAX_SIZE + 3);
 		sendData[MAX_SIZE] = seq[0];
 		sendData[MAX_SIZE + 1] = seq[1];
+		for(int i = 0; i < MAX_SIZE + 2; i++) {
+			checkSum = (byte) (checkSum + sendData[i]);
+		}
+		sendData[MAX_SIZE + 2] = checkSum;
 		return sendData;
 
 	}
