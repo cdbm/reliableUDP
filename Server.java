@@ -3,22 +3,27 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
-
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Server {
 	static int serverPort;
 	static String filename;
+	static boolean[] window = new boolean[10];
+	static int MAX_SIZE = 1048;
+	static String sn;
+	static Timer timeout;
 
 	public static void main(String args[]) throws SocketException, IOException {
-		int count = 0;
-		int MAX_SIZE = 1048;
-
+		int count = 0, ackNum;
 		DatagramSocket clientSocket = new DatagramSocket();
-		InetAddress IpAddress = InetAddress.getByName("localhost");
-
+		DatagramSocket serverSocket = new DatagramSocket(3000);
+		byte[] recData = new byte[2];
 		byte[] sendData = new byte[MAX_SIZE];
+		String ack;
+		
 
-		String filePath = "C:/Users/C. Davi/Documents/Lista_2.txt";
+		String filePath = "C:/Users/diani/Downloads/Lista_2.txt";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -51,89 +56,89 @@ public class Server {
 		while ((count = fis1.read(sendData)) != -1) {
 			if (noOfPackets <= 0)
 				break;
-			//byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
-
-			sendData = mountPacket(sendData, ++sequenceNum);
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
-			clientSocket.send(sendPacket);
-			System.out.println(sendPacket.hashCode());
+			// byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
+			for (int i = 0; i < 10; i++) {
+				send(sendData, sequenceNum);
+				sequenceNum++;
+				if(sequenceNum > 20)
+					sequenceNum = 0;
+				noOfPackets--;
+			}
 			
-			System.out.println("========");
-			System.out.println("last pack sent     " + new String(sendPacket.getData()));
-			noOfPackets--; 
+			while(true) {
+				recData = new byte[2];
+				DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
+				if(noOfPackets <= 0)
+						break;
+				serverSocket.receive(recPacket);
+				ack = new String(recPacket.getData(), "UTF-8");
+				ackNum = Integer.parseInt(ack);
+				window[ackNum%10] = true;
+			}
 		}
 
 		// check
 		System.out.println("\nlast packet\n");
 		System.out.println(new String(sendData));
 
-		lastPack = Arrays.copyOf(sendData, lastPackLen-1);
+		lastPack = Arrays.copyOf(sendData, lastPackLen - 1);
 
 		System.out.println("\nActual last packet\n");
 		System.out.println(new String(lastPack));
-		lastPack = mountPacket(lastPack, ++sequenceNum);
 		// send the correct packet now. but this packet is not being send.
-		DatagramPacket sendPacket1 = new DatagramPacket(lastPack, lastPack.length, IpAddress, 9876);
-		clientSocket.send(sendPacket1);
-		System.out.println("last pack sent" + sendPacket1);
+		send(lastPack, sequenceNum);
 
 	}
 
-	public static byte[] mountPacket(byte[] sendData, int sequenceNum){
+	public static byte[] mountPacket(byte[] sendData, int sequenceNum) {
 		String seqData;
-		if(sequenceNum < 10)
-			seqData = "0"+sequenceNum;
+		if (sequenceNum < 10)
+			seqData = "0" + sequenceNum;
 		else
-			seqData = ""+sequenceNum;
+			seqData = "" + sequenceNum;
 		byte[] seq = seqData.getBytes();
-		sendData = Arrays.copyOf(sendData, 1050);
-		sendData[1048] = seq[0];
-		sendData[1048+1] = seq[1];
+		sn = seqData;
+		sendData = Arrays.copyOf(sendData, MAX_SIZE + 2);
+		sendData[MAX_SIZE] = seq[0];
+		sendData[MAX_SIZE + 1] = seq[1];
 		return sendData;
-		
+
 	}
-}
 
-class sendPacket extends Thread{
-	private DatagramPacket send;
-	private String sequenceNum; 
-	private byte[] recData = new byte[2];
-	//private byte[] dale = Packet.mount(this.recData,7);
-
-	public sendPacket(DatagramPacket send, String sequenceNum)
-	{
-		this.send = send;
-		this.sequenceNum = sequenceNum;
+	public static void send(byte[] sendData, int seqNum) throws SocketException, IOException {
+		InetAddress IpAddress = InetAddress.getByName("localhost");
+		DatagramSocket clientSocket = new DatagramSocket();
+		sendData = mountPacket(sendData, seqNum);
+		System.out.println(new String(sendData));
+		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
+		clientSocket.send(sendPacket);
+		timeout.schedule(new PacketTimeout(seqNum, sendData), 3500);
+		window[seqNum%10] = false;
+		System.out.println(sendPacket.hashCode());
+		System.out.println("========");
+		System.out.println("last pack sent     " + new String(sendPacket.getData()));
+		clientSocket.close();
 	}
-	public void run(){
-		try{
-			long elapse = System.currentTimeMillis();
-			DatagramSocket clientSocket = new DatagramSocket();
 
-			DatagramSocket serverSocket = new DatagramSocket(9876);
-			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
+	class PacketTimeout extends TimerTask {
+		private int seq;
+		private byte[] message;
 
-			clientSocket.send(this.send);
-			String ack = "";
-			long sent = System.currentTimeMillis();
-			while(!ack.equals(sequenceNum))
-			{
-				sent = System.currentTimeMillis();
-				if(sent-elapse > 3500)
-				{
-					System.out.println("timeout no pacote de sequenceNum: "+ sequenceNum);
-					clientSocket.send(this.send);
-					elapse = System.currentTimeMillis();
-				}
-				serverSocket.receive(recPacket);
-				ack = new String (recData, "UTF-8");
-				//ack = Integer.parseInt(ackmsg);
-			}
-			
-		}catch(ConnectException e){
-			System.out.println("Deu ruim no destino");
-		}catch(Exception e){
-			e.printStackTrace();
+		public PacketTimeout(int seq, byte[] message) {
+			this.seq = seq;
+			this.message = message;
 		}
+
+		public void run() {
+			if (window[seq] == false) {
+				System.out.println("**PACKET TIMEOUT (seq: " + seq + ")**");
+
+				try {
+					send(message, seq);
+				} catch (Exception e) {
+				}
+			}
+		}
+
 	}
 }
