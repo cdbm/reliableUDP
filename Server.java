@@ -9,8 +9,8 @@ import java.util.TimerTask;
 public class Server {
 	static int serverPort;
 	static String filename;
-	static boolean[] window = new boolean[10];
-	static int sendBase = 0, lastSent;
+	static boolean[] window;
+	static int sendBase = 0, lastSent, windowMax, seqMax;
 	static int MAX_SIZE = 1048;
 	static String sn;
 	static Timer timeout = new Timer();
@@ -19,6 +19,18 @@ public class Server {
 		DatagramSocket clientSocket = new DatagramSocket();
 		DatagramSocket serverSocket = new DatagramSocket(3000);
 		InetAddress IpAddress = InetAddress.getByName("localhost");
+		
+		String q = "Qual deverá ser o tamanho da janela?"; //processo de query sobre o tamanho de janela desejado
+		byte[] query = q.getBytes();
+		DatagramPacket queryPacket = new DatagramPacket(query, query.length, IpAddress, 9876);
+		clientSocket.send(queryPacket);
+		byte[] answer = new byte[2];
+		DatagramPacket answerPacket = new DatagramPacket(answer, answer.length);
+		serverSocket.receive(answerPacket);
+		String windowSize = new String(answerPacket.getData(), "UTF-8");
+		windowMax = Integer.parseInt(windowSize);
+		seqMax = windowMax*2;
+		window = new boolean[windowMax];
 		byte[] recData = new byte[2];
 		byte[] sendData = new byte[MAX_SIZE];
 		String ack;
@@ -56,13 +68,13 @@ public class Server {
 		boolean b = true;
 		int confirmations = noOfPackets;
 		// byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < windowMax; i++) {
 			count = fis1.read(sendData);
 			if (noOfPackets <= 0)
 				break;
 			send(sendData, sequenceNum, IpAddress);
 			sequenceNum++;
-			if (sequenceNum > 20)
+			if (sequenceNum > seqMax-1)
 				sequenceNum = 0;
 			noOfPackets--;
 		}
@@ -77,22 +89,22 @@ public class Server {
 				ackNum = Integer.parseInt(ack);
 				System.out.println("ACK RECEBIDO: " + ackNum);
 				
-				window[ackNum % 10] = true; // seta a casa do acknumber na janela como true(pacote # foi recebido)
+				window[ackNum % windowMax] = true; // seta a casa do acknumber na janela como true(pacote # foi recebido)
 				
 				if (window[sendBase]) { //se o ack eh correspondente ao sendBase, atualiza o sendBase e envia novo pacote
 					confirmations --;
 					sendBase++;
-					if (sendBase > 9) //se SendBase ultrapassar maior # de sequencia, resete sendBase
+					if (sendBase > windowMax-1) //se SendBase ultrapassar maior # de sequencia, resete sendBase
 						sendBase = 0;
 
 					if((count = fis1.read(sendData)) != -1)	
 				{
 					send(sendData, sequenceNum, IpAddress);
-					window[sequenceNum % 10] = false;
+					window[sequenceNum % windowMax] = false;
 					sequenceNum++;
 				}
 					
-					if (sequenceNum > 19)
+					if (sequenceNum > seqMax-1)
 						sequenceNum = 0;
 					noOfPackets--;
 				}
@@ -121,7 +133,7 @@ public class Server {
 			ackNum = Integer.parseInt(ack);
 			System.out.println("ACK RECEBIDO: " + ackNum);
 
-			window[ackNum % 10] = true;
+			window[ackNum % windowMax] = true;
 		}
 
 
@@ -130,20 +142,15 @@ public class Server {
 
 	public static byte[] mountPacket(byte[] sendData, int sequenceNum) {
 		String seqData;
-		byte checkSum = 0;
 		if (sequenceNum < 10)
 			seqData = "0" + sequenceNum;
 		else
 			seqData = "" + sequenceNum;
 		byte[] seq = seqData.getBytes();
 		sn = seqData;
-		sendData = Arrays.copyOf(sendData, MAX_SIZE + 3);
+		sendData = Arrays.copyOf(sendData, MAX_SIZE + 2);
 		sendData[MAX_SIZE] = seq[0];
 		sendData[MAX_SIZE + 1] = seq[1];
-		for(int i = 0; i < MAX_SIZE + 2; i++) {
-			checkSum = (byte) (checkSum + sendData[i]);
-		}
-		sendData[MAX_SIZE + 2] = checkSum;
 		return sendData;
 
 	}
@@ -155,7 +162,7 @@ public class Server {
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
 		clientSocket.send(sendPacket);
 		timeout.schedule(new PacketTimeout(seqNum, sendData, IpAddress), 3500);
-		window[seqNum % 10] = false;
+		window[seqNum % windowMax] = false;
 		System.out.println(sendPacket.hashCode());
 		System.out.println("========");
 		System.out.println("last pack sent     " + new String(sendPacket.getData()));
@@ -175,7 +182,7 @@ public class Server {
 
 		public void run() {
 			try {
-				if (window[seq % 10] == false) {
+				if (window[seq % windowMax] == false) {
 					System.out.println("**PACKET TIMEOUT (seq: " + seq + ")**");
 
 					try {
