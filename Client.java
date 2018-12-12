@@ -15,14 +15,14 @@ public class Client {
 		Random num = new Random();
 		InetAddress IpAddress = InetAddress.getByName("localhost");
 
-		FileOutputStream file = new FileOutputStream("C:/Users/diani/Downloads/Lista_2-received");
+		FileOutputStream file = new FileOutputStream("C:/Users/C. Davi/Documents/lista_2-received.txt");
 		while (true) {
 			recData = new byte[1050];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			serverSocket.receive(recPacket);
 			String x  = getSeq(recPacket);
 			byte[] ack = x.getBytes();
-			// módulo de descarte
+			// mÃ³dulo de descarte
 			int g = num.nextInt(100);
 			// System.out.println(g);
 			if (g > -1) {
@@ -31,6 +31,9 @@ public class Client {
 				DatagramPacket sendPacket = new DatagramPacket(ack, ack.length, IpAddress, 3000);
 				clientSocket.send(sendPacket);
 				file.flush();
+				//System.out.println(ack.length);
+				String w = new String(sendPacket.getData());
+				System.out.println(w);
 				
 			}
 
