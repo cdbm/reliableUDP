@@ -9,6 +9,7 @@ import java.util.Random;
 public class Client {
 	public static void main(String args[]) throws IOException {
 		DatagramSocket serverSocket = new DatagramSocket(9876);
+		DatagramSocket clientSocket = new DatagramSocket(3000);
 		byte[] recData = new byte[1050];
 		int i = 0;
 		Random num = new Random();
@@ -27,7 +28,8 @@ public class Client {
 			if (g > -1) {
 				file.write(Arrays.copyOfRange(recPacket.getData(), 0, 1048));
 				// System.out.println("\nPacket" + ++i + " written to file\n");
-				DatagramPacket sendPacket = new DatagramPacket(ack, ack.length, IpAddress, 9876);
+				DatagramPacket sendPacket = new DatagramPacket(ack, ack.length, IpAddress, 3000);
+				clientSocket.send(sendPacket);
 				file.flush();
 				
 			}
