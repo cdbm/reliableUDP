@@ -14,16 +14,16 @@ public class Server {
 	static int MAX_SIZE = 1048;
 	static String sn;
 	static Timer timeout = new Timer();
-
 	public static void main(String args[]) throws SocketException, IOException {
 		int count = 0, ackNum;
 		DatagramSocket clientSocket = new DatagramSocket();
 		DatagramSocket serverSocket = new DatagramSocket(3000);
+		InetAddress IpAddress = InetAddress.getByName("localhost");
 		byte[] recData = new byte[2];
 		byte[] sendData = new byte[MAX_SIZE];
 		String ack;
 
-		String filePath = "C:/Users/C. Davi/Documents/lista_2.txt";
+		String filePath = "C:/Users/diani/Downloads/lista_2.txt";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -54,38 +54,43 @@ public class Server {
 		// while((count = fis1.read(sendData)) != -1 && (noOfPackets!=0))
 		int sequenceNum = 0;
 		boolean b = true;
-		
+
 		// byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
 		for (int i = 0; i < 10; i++) {
+			count = fis1.read(sendData);
 			if (noOfPackets <= 0)
 				break;
-			send(sendData, sequenceNum);
+			send(sendData, sequenceNum, IpAddress);
 			sequenceNum++;
 			if (sequenceNum > 20)
 				sequenceNum = 0;
 			noOfPackets--;
 		}
 		while ((count = fis1.read(sendData)) != -1) {
-			
+
 			recData = new byte[2];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
-			serverSocket.receive(recPacket);
-			ack = new String(recPacket.getData(), "UTF-8");
-			ackNum = Integer.parseInt(ack);
-			System.out.println("ACK RECEBIDO: " + ackNum);
-			window[ackNum % 10] = true;
-			if (ackNum == sendBase) {
-				sendBase++;
-				if(sendBase > 20)
-						sendBase= 0;
-				send(sendData, sequenceNum);
-				sequenceNum++;
-				if(sequenceNum > 20)
+			ackNum = -1;
+			while (ackNum != sendBase) {// enquanto nao receber um ack respecitivo a base da janela, continue
+				serverSocket.receive(recPacket); // receives ack
+				ack = new String(recPacket.getData(), "UTF-8");// extracts acknumber
+				ackNum = Integer.parseInt(ack);
+				System.out.println("ACK RECEBIDO: " + ackNum);
+				window[ackNum % 10] = true; // seta a casa do acknumber na janela como true(pacote # foi recebido)
+				
+				if (ackNum == sendBase) { //se o ack eh correspondente ao sendBase, atualiza o sendBase e envia novo pacote
+					sendBase++;
+					if (sendBase > 20) //se SendBase ultrapassar maior # de sequencia, resete sendBase
+						sendBase = 0;
+					send(sendData, sequenceNum, IpAddress);
+					sequenceNum++;
+					if (sequenceNum > 20)
 						sequenceNum++;
-				noOfPackets--;
+					noOfPackets--;
+				}
+				}
 			}
 
-		}
 
 		// check
 		System.out.println("\nlast packet\n");
@@ -96,7 +101,7 @@ public class Server {
 		System.out.println("\nActual last packet\n");
 		System.out.println(new String(lastPack));
 		// send the correct packet now. but this packet is not being send.
-		send(lastPack, sequenceNum);
+		send(lastPack, sequenceNum, IpAddress);
 
 	}
 
@@ -115,14 +120,13 @@ public class Server {
 
 	}
 
-	public static void send(byte[] sendData, int seqNum) throws SocketException, IOException {
-		InetAddress IpAddress = InetAddress.getByName("localhost");
+	public static void send(byte[] sendData, int seqNum, InetAddress IpAddress) throws SocketException, IOException {
 		DatagramSocket clientSocket = new DatagramSocket();
 		sendData = mountPacket(sendData, seqNum);
 		System.out.println(new String(sendData));
 		DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IpAddress, 9876);
 		clientSocket.send(sendPacket);
-		timeout.schedule(new PacketTimeout(seqNum, sendData), 3500);
+		timeout.schedule(new PacketTimeout(seqNum, sendData, IpAddress), 3500);
 		window[seqNum % 10] = false;
 		System.out.println(sendPacket.hashCode());
 		System.out.println("========");
@@ -133,23 +137,25 @@ public class Server {
 	static class PacketTimeout extends TimerTask {
 		private int seq;
 		private byte[] message;
+		private InetAddress IpAddress;
 
-		public PacketTimeout(int seq, byte[] message) {
+		public PacketTimeout(int seq, byte[] message, InetAddress IpAddress) {
 			this.seq = seq;
 			this.message = message;
+			this.IpAddress = IpAddress;
 		}
 
 		public void run() {
 			try {
-			if (window[seq%10] == false) {
-				System.out.println("**PACKET TIMEOUT (seq: " + seq + ")**");
+				if (window[seq % 10] == false) {
+					System.out.println("**PACKET TIMEOUT (seq: " + seq + ")**");
 
-				try {
-					send(message, seq);
-				} catch (Exception e) {
+					try {
+						send(this.message, this.seq, this.IpAddress);
+					} catch (Exception e) {
+					}
 				}
-			}
-			}catch(NullPointerException e) {
+			} catch (NullPointerException e) {
 				e.printStackTrace();
 			}
 		}
