@@ -9,20 +9,20 @@ import java.util.Random;
 public class Client {
 	public static void main(String args[]) throws IOException {
 		DatagramSocket serverSocket = new DatagramSocket(9876);
-		DatagramSocket clientSocket = new DatagramSocket(3000);
+		DatagramSocket clientSocket = new DatagramSocket();
 		byte[] recData = new byte[1050];
 		int i = 0;
 		Random num = new Random();
 		InetAddress IpAddress = InetAddress.getByName("localhost");
 
-		FileOutputStream file = new FileOutputStream("C:/Users/C. Davi/Documents/download-received.rar");
+		FileOutputStream file = new FileOutputStream("C:/Users/diani/Downloads/Lista_2-received");
 		while (true) {
 			recData = new byte[1050];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			serverSocket.receive(recPacket);
 			String x  = getSeq(recPacket);
 			byte[] ack = x.getBytes();
-			// mÃ³dulo de descarte
+			// módulo de descarte
 			int g = num.nextInt(100);
 			// System.out.println(g);
 			if (g > -1) {
