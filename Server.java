@@ -23,7 +23,7 @@ public class Server {
 		byte[] sendData = new byte[MAX_SIZE];
 		String ack;
 
-		String filePath = "C:/Users/diani/Downloads/Lista_2.txt";
+		String filePath = "C:/Users/C. Davi/Documents/lista_2.txt";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -66,15 +66,13 @@ public class Server {
 			noOfPackets--;
 		}
 		while ((count = fis1.read(sendData)) != -1) {
-			if (noOfPackets <= 0)
-				break;
+			
 			recData = new byte[2];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
-			if (noOfPackets <= 0)
-				break;
 			serverSocket.receive(recPacket);
 			ack = new String(recPacket.getData(), "UTF-8");
 			ackNum = Integer.parseInt(ack);
+			System.out.println("ACK RECEBIDO: " + ackNum);
 			window[ackNum % 10] = true;
 			if (ackNum == sendBase) {
 				sendBase++;
