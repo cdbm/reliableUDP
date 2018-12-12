@@ -23,7 +23,7 @@ public class Server {
 		byte[] sendData = new byte[MAX_SIZE];
 		String ack;
 
-		String filePath = "C:/Users/diani/Downloads/lista_2.txt";
+		String filePath = "C:/Users/bergc/Documents/google.jpg";
 		File file = new File(filePath);
 		FileInputStream fis = new FileInputStream(file);
 
@@ -54,7 +54,7 @@ public class Server {
 		// while((count = fis1.read(sendData)) != -1 && (noOfPackets!=0))
 		int sequenceNum = 0;
 		boolean b = true;
-
+		int confirmations = noOfPackets;
 		// byte[] trusend = Arrays.copyOf(sendData, MAX_SIZE+5);
 		for (int i = 0; i < 10; i++) {
 			count = fis1.read(sendData);
@@ -66,26 +66,34 @@ public class Server {
 				sequenceNum = 0;
 			noOfPackets--;
 		}
-		while ((count = fis1.read(sendData)) != -1) {
+		while ((count = fis1.read(sendData)) != -1 || confirmations > 0) {
 
 			recData = new byte[2];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			ackNum = -1;
-			while (ackNum != sendBase) {// enquanto nao receber um ack respecitivo a base da janela, continue
+			while (ackNum != sendBase && confirmations > 0) {// enquanto nao receber um ack respecitivo a base da janela, continue
 				serverSocket.receive(recPacket); // receives ack
 				ack = new String(recPacket.getData(), "UTF-8");// extracts acknumber
 				ackNum = Integer.parseInt(ack);
 				System.out.println("ACK RECEBIDO: " + ackNum);
+				
 				window[ackNum % 10] = true; // seta a casa do acknumber na janela como true(pacote # foi recebido)
 				
-				if (ackNum == sendBase) { //se o ack eh correspondente ao sendBase, atualiza o sendBase e envia novo pacote
+				if (window[sendBase]) { //se o ack eh correspondente ao sendBase, atualiza o sendBase e envia novo pacote
+					confirmations --;
 					sendBase++;
-					if (sendBase > 20) //se SendBase ultrapassar maior # de sequencia, resete sendBase
+					if (sendBase > 9) //se SendBase ultrapassar maior # de sequencia, resete sendBase
 						sendBase = 0;
+
+					if((count = fis1.read(sendData)) != -1)	
+				{
 					send(sendData, sequenceNum, IpAddress);
+					window[sequenceNum % 10] = false;
 					sequenceNum++;
-					if (sequenceNum > 20)
-						sequenceNum++;
+				}
+					
+					if (sequenceNum > 19)
+						sequenceNum = 0;
 					noOfPackets--;
 				}
 				}
@@ -101,7 +109,22 @@ public class Server {
 		System.out.println("\nActual last packet\n");
 		System.out.println(new String(lastPack));
 		// send the correct packet now. but this packet is not being send.
+
 		send(lastPack, sequenceNum, IpAddress);
+		ackNum = -1;
+		while(!window[sendBase])
+		{
+			recData = new byte[2];
+			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
+			serverSocket.receive(recPacket);
+			ack = new String(recPacket.getData(), "UTF-8"); 
+			ackNum = Integer.parseInt(ack);
+			System.out.println("ACK RECEBIDO: " + ackNum);
+
+			window[ackNum % 10] = true;
+		}
+
+
 
 	}
 
