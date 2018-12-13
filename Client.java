@@ -37,7 +37,7 @@ public class Client {
 		seqMax = windowMax*2;
 		System.out.println("Escolha o percentual de erro do modulo de descarte, digitando um valor de 0 a 99");
 		percentage = in.nextInt();
-		while(percentage < 0 || percentage > 99) {
+		while(percentage < 0 || percentage > 49) {
 			System.out.println("Numero invalido, tente novamente");
 			percentage = in.nextInt();
 		}
@@ -51,7 +51,7 @@ public class Client {
 			if(checkSummer(recPacket.getData())) {
 			String x = getSeq(recPacket);
 			byte[] ack = x.getBytes();
-			// módulo de descarte
+			// mÃ³dulo de descarte
 			int g = num.nextInt(100);
 			int nseq = Integer.parseInt(x);
 			System.out.println(g);
