@@ -20,7 +20,7 @@ public class Client {
 		
 		byte[] query = new byte[100];
 		DatagramPacket queryPacket = new DatagramPacket(query, query.length);
-		clientSocket.receive(queryPacket);
+		serverSocket.receive(queryPacket);
 		String question = new String (queryPacket.getData(), "UTF-8");
 		System.out.println(question);
 		windowMax = -1;
@@ -31,8 +31,8 @@ public class Client {
 		}
 		String resposta = Integer.toString(windowMax);
 		byte[] answer = resposta.getBytes();
-		DatagramPacket answerPacket = new DatagramPacket(answer, answer.length, IpAddress, 3000);
-		clientSocket.send(answerPacket);
+		
+		
 		recebidos = new boolean[windowMax];
 		seqMax = windowMax*2;
 		System.out.println("Escolha o percentual de erro do modulo de descarte, digitando um valor de 0 a 99");
@@ -41,15 +41,16 @@ public class Client {
 			System.out.println("Numero invalido, tente novamente");
 			percentage = in.nextInt();
 		}
-		
-		FileOutputStream file = new FileOutputStream("C:/Users/diani/Downloads/Alyssa-received.jpg");
+		DatagramPacket answerPacket = new DatagramPacket(answer, answer.length, IpAddress, 3000);
+		clientSocket.send(answerPacket);
+		FileOutputStream file = new FileOutputStream("C:/Users/C. Davi/Documents/Lista_2-received.txt");
 		while (true) {
 			recData = new byte[1050];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			serverSocket.receive(recPacket);
 			String x = getSeq(recPacket);
 			byte[] ack = x.getBytes();
-			// módulo de descarte
+			// mÃ³dulo de descarte
 			int g = num.nextInt(100);
 			int nseq = Integer.parseInt(x);
 			System.out.println(g);
