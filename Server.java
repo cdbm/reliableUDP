@@ -20,7 +20,7 @@ public class Server {
 		DatagramSocket serverSocket = new DatagramSocket(3000);
 		InetAddress IpAddress = InetAddress.getByName("localhost");
 		
-		String q = "Qual devera ser o tamanho da janela? Digite um numero de 0 a 99"; //processo de query sobre o tamanho de janela desejado
+		String q = "Qual devera ser o tamanho da janela? Digite um numero de 0 a 49"; //processo de query sobre o tamanho de janela desejado
 		byte[] query = q.getBytes();
 		DatagramPacket queryPacket = new DatagramPacket(query, query.length, IpAddress, 9876);
 		clientSocket.send(queryPacket);
