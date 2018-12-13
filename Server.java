@@ -20,7 +20,7 @@ public class Server {
 		DatagramSocket serverSocket = new DatagramSocket(3000);
 		InetAddress IpAddress = InetAddress.getByName("localhost");
 		
-		String q = "Qual deverá ser o tamanho da janela?"; //processo de query sobre o tamanho de janela desejado
+		String q = "Qual devera ser o tamanho da janela? Digite um numero de 0 a 99"; //processo de query sobre o tamanho de janela desejado
 		byte[] query = q.getBytes();
 		DatagramPacket queryPacket = new DatagramPacket(query, query.length, IpAddress, 9876);
 		clientSocket.send(queryPacket);
@@ -74,7 +74,7 @@ public class Server {
 				break;
 			send(sendData, sequenceNum, IpAddress);
 			sequenceNum++;
-			if (sequenceNum > seqMax-1)
+			if (sequenceNum > seqMax)
 				sequenceNum = 0;
 			noOfPackets--;
 		}
@@ -92,7 +92,7 @@ public class Server {
 				window[ackNum % windowMax] = true; // seta a casa do acknumber na janela como true(pacote # foi recebido)
 				
 				if (window[sendBase]) { //se o ack eh correspondente ao sendBase, atualiza o sendBase e envia novo pacote
-					confirmations --;
+					confirmations--;
 					sendBase++;
 					if (sendBase > windowMax-1) //se SendBase ultrapassar maior # de sequencia, resete sendBase
 						sendBase = 0;
@@ -116,13 +116,13 @@ public class Server {
 		System.out.println("\nlast packet\n");
 		System.out.println(new String(sendData));
 
-		lastPack = Arrays.copyOf(sendData, lastPackLen - 1);
+		lastPack = Arrays.copyOf(sendData, lastPackLen-1);
 
 		System.out.println("\nActual last packet\n");
 		System.out.println(new String(lastPack));
 		// send the correct packet now. but this packet is not being send.
 
-		send(lastPack, sequenceNum, IpAddress);
+		send(lastPack, sequenceNum--, IpAddress);
 		ackNum = -1;
 		while(!window[sendBase])
 		{
@@ -142,15 +142,21 @@ public class Server {
 
 	public static byte[] mountPacket(byte[] sendData, int sequenceNum) {
 		String seqData;
+		byte checkSum = 0;
 		if (sequenceNum < 10)
 			seqData = "0" + sequenceNum;
 		else
 			seqData = "" + sequenceNum;
 		byte[] seq = seqData.getBytes();
 		sn = seqData;
-		sendData = Arrays.copyOf(sendData, MAX_SIZE + 2);
+		sendData = Arrays.copyOf(sendData, MAX_SIZE + 3);
 		sendData[MAX_SIZE] = seq[0];
 		sendData[MAX_SIZE + 1] = seq[1];
+		for (int i = 0; i < MAX_SIZE + 2; i++) {
+			checkSum = (byte) (checkSum + sendData[i]);
+		}
+		sendData[MAX_SIZE + 2] = checkSum;
+		System.out.println("CHECKSUM DO PACOTE " + sequenceNum + ":             " + checkSum);
 		return sendData;
 
 	}

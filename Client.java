@@ -43,14 +43,15 @@ public class Client {
 		}
 		DatagramPacket answerPacket = new DatagramPacket(answer, answer.length, IpAddress, 3000);
 		clientSocket.send(answerPacket);
-		FileOutputStream file = new FileOutputStream("C:/Users/C. Davi/Documents/Lista_2-received.txt");
+		FileOutputStream file = new FileOutputStream("C:/Users/diani/Downloads/Alyssa-receive2.jpg");
 		while (true) {
-			recData = new byte[1050];
+			recData = new byte[1051];
 			DatagramPacket recPacket = new DatagramPacket(recData, recData.length);
 			serverSocket.receive(recPacket);
+			if(checkSummer(recPacket.getData())) {
 			String x = getSeq(recPacket);
 			byte[] ack = x.getBytes();
-			// mÃ³dulo de descarte
+			// módulo de descarte
 			int g = num.nextInt(100);
 			int nseq = Integer.parseInt(x);
 			System.out.println(g);
@@ -86,10 +87,22 @@ public class Client {
 				//System.out.println(w);
 
 			}
-
+		}
 		}
 	}
-
+	
+	public static boolean checkSummer(byte[] data) {
+		byte checkSum = 0;
+		for(int i = 0; i < 1050; i++) {
+			checkSum = (byte) (checkSum + data[i]);
+		}
+		
+		if(checkSum == data[1050]) {
+			return true;
+		}else {
+			return false;
+		}
+	}
 	public static String getSeq(DatagramPacket recPacket) {
 		byte[] seq = new byte[2];
 		seq[0] = recPacket.getData()[1048];
